@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráfico de Tempos Médios por Atividade</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #ffffff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+        .chart-container {
+            width: 90%;
+            max-width: 1000px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                width: 95%;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <canvas id="activityTimeChart"></canvas>
+    </div>
+
+    <script>
+        // Valores padrão para demonstração
+        let activityLabels = ["Planejamento", "Desenvolvimento", "Testes", "Reuniões", "Documentação", "Deploy"];
+        let averageTimes = [45, 120, 60, 30, 90, 25];
+        let targetTimes = [40, 100, 50, 25, 75, 20];
+        let chartTitle = "Tempo Médio por Atividade";
+        let chartSubtitle = "Análise de Desempenho • 2025";
+
+        // Função para decodificar parâmetros da URL
+        function decodeURLData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Verifica se há parâmetros para atividades e tempos médios
+            if (urlParams.has('activities')) {
+                try {
+                    activityLabels = JSON.parse(decodeURIComponent(urlParams.get('activities')));
+                } catch (e) {
+                    console.error("Erro ao decodificar atividades:", e);
+                }
+            }
+            
+            if (urlParams.has('times')) {
+                try {
+                    averageTimes = JSON.parse(decodeURIComponent(urlParams.get('times')));
+                } catch (e) {
+                    console.error("Erro ao decodificar tempos:", e);
+                }
+            }
+            
+            if (urlParams.has('targets')) {
+                try {
+                    targetTimes = JSON.parse(decodeURIComponent(urlParams.get('targets')));
+                } catch (e) {
+                    console.error("Erro ao decodificar metas:", e);
+                }
+            }
+            
+            if (urlParams.has('title')) {
+                chartTitle = decodeURIComponent(urlParams.get('title'));
+            }
+            
+            if (urlParams.has('subtitle')) {
+                chartSubtitle = decodeURIComponent(urlParams.get('subtitle'));
+            }
+        }
+
+        // Carregar dados da URL, se disponíveis
+        decodeURLData();
+
+        // Configuração do gráfico
+        const ctx = document.getElementById('activityTimeChart').getContext('2d');
+        
+        // Determinar valor máximo para o eixo Y (para melhor visualização)
+        const maxTime = Math.max(...averageTimes, ...targetTimes) * 1.2;
+        
+        // Definição das cores para as barras (azul profissional)
+        const barColors = averageTimes.map((time, index) => {
+            // Se o tempo for maior que a meta, usar vermelho, caso contrário verde
+            if (targetTimes[index] && time > targetTimes[index]) {
+                return 'rgba(235, 77, 75, 0.7)'; // Vermelho se acima da meta (ruim)
+            } else {
+                return 'rgba(85, 239, 196, 0.7)'; // Verde se abaixo da meta (bom)
+            }
+        });
+        
+        const barBorderColors = averageTimes.map((time, index) => {
+            if (targetTimes[index] && time > targetTimes[index]) {
+                return 'rgb(235, 77, 75)';
+            } else {
+                return 'rgb(85, 239, 196)';
+            }
+        });
+
+        const myChart = new Chart(ctx, {
+            type: 'bar', // Usamos barras para melhor visualização de tempos por atividade
+            data: {
+                labels: activityLabels,
+                datasets: [
+                    {
+                        label: "Tempo Médio (min)",
+                        data: averageTimes,
+                        backgroundColor: barColors,
+                        borderColor: barBorderColors,
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        barPercentage: 0.7,
+                    },
+                    {
+                        label: "Tempo Meta (min)",
+                        data: targetTimes,
+                        type: 'line',
+                        fill: false,
+                        backgroundColor: "rgba(9, 132, 227, 0.8)",
+                        borderColor: "rgba(9, 132, 227, 1)",
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointBackgroundColor: "#ffffff",
+                        pointBorderColor: "rgba(9, 132, 227, 1)",
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: "#ffffff",
+                        pointHoverBorderColor: "rgba(9, 132, 227, 1)",
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: chartTitle,
+                        font: {
+                            size: 22,
+                            weight: "bold",
+                            family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
+                        },
+                        padding: {
+                            top: 20,
+                            bottom: 10
+                        },
+                        color: "#2c3e50"
+                    },
+                    subtitle: {
+                        display: true,
+                        text: chartSubtitle,
+                        font: {
+                            size: 14,
+                            family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
+                        },
+                        padding: {
+                            bottom: 30
+                        },
+                        color: "#7f8c8d"
+                    },
+                    legend: {
+                        position: "bottom",
+                        align: "center",
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: "rgba(44, 62, 80, 0.9)",
+                        titleFont: {
+                            size: 16,
+                            weight: "bold",
+                            family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
+                        },
+                        titleColor: "#ecf0f1",
+                        titleMarginBottom: 10,
+                        bodyFont: {
+                            size: 14,
+                            family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
+                        },
+                        bodyColor: "#ecf0f1",
+                        bodySpacing: 8,
+                        padding: 16,
+                        cornerRadius: 8,
+                        displayColors: true,
+                        boxWidth: 10,
+                        boxHeight: 10,
+                        boxPadding: 4,
+                        usePointStyle: true,
+                        callbacks: {
+                            afterLabel: function(context) {
+                                if (context.datasetIndex === 0) { // Apenas para o dataset de tempo médio
+                                    const metaValue = targetTimes[context.dataIndex];
+                                    const actualValue = averageTimes[context.dataIndex];
+                                    const diff = actualValue - metaValue;
+                                    
+                                    if (diff > 0) {
+                                        return `↑ ${diff.toFixed(1)} min acima da meta`;
+                                    } else if (diff < 0) {
+                                        return `↓ ${Math.abs(diff).toFixed(1)} min abaixo da meta`;
+                                    } else {
+                                        return '✓ Meta atingida exatamente';
+                                    }
+                                }
+                                return null;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: maxTime,
+                        grid: {
+                            drawBorder: false,
+                            color: "rgba(200, 200, 200, 0.15)",
+                            lineWidth: 1
+                        },
+                        ticks: {
+                            font: {
+                                size: 12,
+                                family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
+                            },
+                            padding: 12,
+                            color: "#7f8c8d",
+                            callback: function(value) {
+                                return value + ' min';
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: "Tempo (minutos)",
+                            font: {
+                                size: 14,
+                                weight: "bold",
+                                family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
+                            },
+                            padding: {
+                                top: 15,
+                                bottom: 15
+                            },
+                            color: "#2c3e50"
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 12,
+                                family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
+                            },
+                            padding: 12,
+                            color: "#7f8c8d",
+                            maxRotation: 45,
+                            minRotation: 45
+                        },
+                        title: {
+                            display: true,
+                            text: "Atividades",
+                            font: {
+                                size: 14,
+                                weight: "bold",
+                                family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
+                            },
+                            padding: {
+                                top: 20
+                            },
+                            color: "#2c3e50"
+                        }
+                    }
+                },
+                layout: {
+                    padding: {
+                        left: 15,
+                        right: 25,
+                        top: 15,
+                        bottom: 25
+                    }
+                },
+                animations: {
+                    tension: {
+                        duration: 1000,
+                        easing: "easeOutQuart",
+                        from: 1,
+                        to: 0.8,
+                        loop: false
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
